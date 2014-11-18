@@ -1,20 +1,19 @@
 ﻿@{
-    ViewBag.Title = "Index";
+    ViewBag.Title = "Home";
 }
-
-<h2>AO Home</h2>
 
 <div class="container">
     <div class="row">
-        <div class="col-md-12">
-            <div id="display-box"></div>
+        <div class="col-md-6">
+            <input type="text" id="participants" placeholder="New Participant" />
+            <input type="button" id="add" value="Add Participant" />
+            <input type="button" id="clear" value="Clear Participant" />
+            <ul id="list"></ul>
         </div>
-    </div>
-    <div class="row">
-        <div class="col-md-12">
-            <input type="text" id="participants" placeholder="Participants" />
+        <div class="col-md-6">
             <input type="button" id="shuffle" value="Shuffle" />
             <input type="button" id="stop" value="Stop" />
+            <div id="display-box"></div>
         </div>
     </div>
 </div>
@@ -24,12 +23,23 @@
     <script src="~/signalr/hubs"></script>
     <script>
         var interval;
+        var participants = [];
 
         $(function () {
             var ao = $.connection.aOHub;
 
-            ao.client.startShuffle = function (participants) {
-                StartShuffle(participants);
+            ao.client.addParticipant = function (newParticipant) {
+                participants.push(newParticipant);
+                UpdateParticipantList();
+            }
+
+            ao.client.clearParticipants = function () {
+                participants = [];
+                UpdateParticipantList();
+            }
+
+            ao.client.startShuffle = function () {
+                StartShuffle();
             };
 
             ao.client.stopShuffle = function (winner) {
@@ -37,21 +47,37 @@
             }
 
             $.connection.hub.start().done(function () {
+                ao.server.getParticipants().done(function (result) {
+                    participants = result;
+                });
+
+                $('#add').click(function () {
+                    var newParticipant = $('#participants').val();
+                    if (newParticipant != '') {
+                        ao.server.addParticipant(newParticipant);
+                        $('#participants').val('').focus();
+                    }
+                    
+                });
+
+                $('#clear').click(function () {
+                    ao.server.clearParticipants();
+                    $('#participants').val('').focus();
+                });
+
                 $('#shuffle').click(function () {
-                    var participants = $('#participants').val().split(',');
                     $('#participants').prop('disabled', true);
-                    ao.server.shuffle(participants);
+                    ao.server.shuffle();
                 });
 
                 $('#stop').click(function () {
-                    var participants = $('#participants').val().split(',');
                     $('#participants').prop('disabled', false);
-                    ao.server.stop(participants);
+                    ao.server.stop();
                 });
             });
         });
 
-        function StartShuffle(participants) {
+        function StartShuffle() {
             var num = 0;
             interval = setInterval(function () {
                 num = Math.floor(Math.random() * (participants.length - 1));
@@ -62,6 +88,13 @@
         function StopShuffle(winner) {
             clearInterval(interval);
             $('#display-box').text(winner);
+        }
+
+        function UpdateParticipantList() {
+            $('ul#list').empty();
+            for (var i = 0; i < participants.length; i++) {
+                $('ul#list').append('<li>' + participants[i] + '</li>')
+            }
         }
     </script>
 }

@@ -9,14 +9,38 @@ namespace AO.Web.Hubs
 {
     public class AOHub : Hub
     {
-        public void Shuffle(string[] participants)
+        private List<string> _participants;
+
+        public AOHub()
         {
-            Clients.All.startShuffle(participants);
+            _participants = new List<string>();
         }
 
-        public void Stop(string[] participants)
+        public void AddParticipant(string participant)
         {
-            string winner = Randomizer.GetRandomArrayContent(participants);
+            _participants.Add(participant);
+            Clients.All.addParticipant(participant);
+        }
+
+        public void ClearParticipants()
+        {
+            _participants.Clear();
+            Clients.All.clearParticipants();
+        }
+
+        public string[] GetParticipants()
+        {
+            return _participants.ToArray();
+        }
+
+        public void Shuffle()
+        {
+            Clients.All.startShuffle();
+        }
+
+        public void Stop()
+        {
+            string winner = Randomizer.GetRandomArrayContent(_participants.ToArray());
             Clients.All.stopShuffle(winner);
         }
     }
