@@ -1,0 +1,67 @@
+﻿@{
+    ViewBag.Title = "Index";
+}
+
+<h2>AO Home</h2>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <div id="display-box"></div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <input type="text" id="participants" placeholder="Participants" />
+            <input type="button" id="shuffle" value="Shuffle" />
+            <input type="button" id="stop" value="Stop" />
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script src="~/Scripts/jquery.signalR-2.1.2.min.js"></script>
+    <script src="~/signalr/hubs"></script>
+    <script>
+        var interval;
+
+        $(function () {
+            var ao = $.connection.aOHub;
+
+            ao.client.startShuffle = function (participants) {
+                StartShuffle(participants);
+            };
+
+            ao.client.stopShuffle = function (winner) {
+                StopShuffle(winner);
+            }
+
+            $.connection.hub.start().done(function () {
+                $('#shuffle').click(function () {
+                    var participants = $('#participants').val().split(',');
+                    $('#participants').prop('disabled', true);
+                    ao.server.shuffle(participants);
+                });
+
+                $('#stop').click(function () {
+                    var participants = $('#participants').val().split(',');
+                    $('#participants').prop('disabled', false);
+                    ao.server.stop(participants);
+                });
+            });
+        });
+
+        function StartShuffle(participants) {
+            var num = 0;
+            interval = setInterval(function () {
+                num = Math.floor(Math.random() * (participants.length - 1));
+                $('#display-box').text(participants[num]);
+            }, 100);
+        }
+
+        function StopShuffle(winner) {
+            clearInterval(interval);
+            $('#display-box').text(winner);
+        }
+    </script>
+}
